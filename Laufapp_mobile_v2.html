@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Lauf-Distanz Karte</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 1em;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.5em;
+      margin-bottom: 0.5em;
+    }
+    input, select, button {
+      padding: 0.75em;
+      margin: 0.5em auto;
+      width: 100%;
+      max-width: 400px;
+      display: block;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      font-weight: bold;
+      border: none;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #map {
+      height: 60vh;
+      margin: 1em auto;
+      max-width: 100%;
+    }
+    #info {
+      margin: 1em auto;
+      font-weight: bold;
+      text-align: center;
+      color: #333;
+    }
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.2em;
+      }
+      input, select, button {
+        font-size: 0.95em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Wie weit bist du gelaufen?</h1>
+
+  <input type="text" id="apikey" placeholder="GraphHopper API Key eingeben">
+
+  <label for="mode">Modus:</label>
+  <select id="mode">
+    <option value="richtung">Stadt + Richtung + Entfernung</option>
+    <option value="zielstadt">Stadt + Zielstadt + Entfernung</option>
+  </select>
+
+  <input type="text" id="city" placeholder="Startstadt (z. B. Berlin)">
+  <input type="number" id="distance" placeholder="Gelaufene Kilometer">
+  <select id="direction" style="display: block;">
+    <option value="N">Norden</option>
+    <option value="NO">Nordosten</option>
+    <option value="O">Osten</option>
+    <option value="SO">Südosten</option>
+    <option value="S">Süden</option>
+    <option value="SW">Südwesten</option>
+    <option value="W">Westen</option>
+    <option value="NW">Nordwesten</option>
+  </select>
+  <input type="text" id="destCity" placeholder="Zielstadt" style="display: none;">
+
+  <button onclick="showDistance()">Anzeigen</button>
+  <button onclick="exportScreenshot()">Screenshot erstellen</button>
+  <div id="map"></div>
+  <div id="info" style="margin-top: 1em; font-weight: bold;"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js">
+    function exportScreenshot() {
+      const mapContainer = document.getElementById('map');
+      html2canvas(document.body, {
+        useCORS: true,
+        scrollY: -window.scrollY
+      }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'lauf-distanz.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    let map = L.map('map').setView([51, 10], 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap-Mitwirkende'
+    }).addTo(map);
+
+    document.getElementById('mode').addEventListener('change', () => {
+      const mode = document.getElementById('mode').value;
+      document.getElementById('direction').style.display = mode === 'richtung' ? 'block' : 'none';
+      document.getElementById('destCity').style.display = mode === 'zielstadt' ? 'block' : 'none';
+    });
+
+    async function geocode(city) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.length === 0) throw new Error('Stadt nicht gefunden.');
+      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    }
+
+    async function showDistance() {
+      const apiKey = document.getElementById('apikey').value.trim();
+      if (!apiKey) {
+        alert('Bitte gültigen GraphHopper API-Key eingeben.');
+        return;
+      }
+
+      const mode = document.getElementById('mode').value;
+      const startCity = document.getElementById('city').value;
+      const km = parseFloat(document.getElementById('distance').value);
+      if (!startCity || isNaN(km)) {
+        alert('Bitte Startstadt und Entfernung eingeben.');
+        return;
+      }
+
+      let startCoords;
+      try {
+        startCoords = await geocode(startCity);
+      } catch (e) {
+        alert(e.message);
+        return;
+      }
+
+      let routeCoords = [];
+
+      if (mode === 'richtung') {
+        const dir = document.getElementById('direction').value;
+        const dirAngles = {
+          N: 0, NO: 45, O: 90, SO: 135, S: 180, SW: 225, W: 270, NW: 315
+        };
+        const angle = dirAngles[dir] * Math.PI / 180;
+        const deltaLat = (km / 111) * Math.cos(angle);
+        const deltaLon = (km / 85) * Math.sin(angle);
+        const endCoords = [startCoords[0] + deltaLat, startCoords[1] + deltaLon];
+
+        const routeUrl = `https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords[0]},${endCoords[1]}&vehicle=foot&locale=de&points_encoded=false&key=${apiKey}`;
+
+        const routeRes = await fetch(routeUrl);
+        const routeData = await routeRes.json();
+
+        if (!routeData.paths || routeData.paths.length === 0) {
+          alert('Keine Route gefunden.\n\nFehlermeldung: ' + (routeData.message || 'Unbekannter Fehler.'));
+          return;
+        }
+
+        routeCoords = routeData.paths[0].points.coordinates.map(c => [c[1], c[0]]);
+      } else {
+        const destCity = document.getElementById('destCity').value;
+        if (!destCity) {
+          alert('Bitte Zielstadt eingeben.');
+          return;
+        }
+
+        let endCoords;
+        try {
+          endCoords = await geocode(destCity);
+        } catch (e) {
+          alert(e.message);
+          return;
+        }
+
+        const routeUrl = `https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords[0]},${endCoords[1]}&vehicle=foot&locale=de&points_encoded=false&key=${apiKey}`;
+
+        const routeRes = await fetch(routeUrl);
+        const routeData = await routeRes.json();
+
+        if (!routeData.paths || routeData.paths.length === 0) {
+          alert('Keine Route gefunden.\n\nFehlermeldung: ' + (routeData.message || 'Unbekannter Fehler.'));
+          return;
+        }
+
+        const fullRoute = routeData.paths[0].points.coordinates.map(c => [c[1], c[0]]);
+        let total = 0;
+        routeCoords.push(fullRoute[0]);
+
+        for (let i = 1; i < fullRoute.length; i++) {
+          const [lat1, lon1] = fullRoute[i - 1];
+          const [lat2, lon2] = fullRoute[i];
+          const dist = distanceKm(lat1, lon1, lat2, lon2);
+          if (total + dist > km) break;
+          total += dist;
+          routeCoords.push(fullRoute[i]);
+        }
+      }
+
+      map.eachLayer(layer => {
+        if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+          map.removeLayer(layer);
+        }
+      });
+
+      L.marker(startCoords).addTo(map).bindPopup('Start: ' + startCity).openPopup();
+      const end = routeCoords[routeCoords.length - 1];
+      L.marker(end).addTo(map).bindPopup(`${km.toFixed(1)} km zurückgelegt`).openPopup();
+      L.polyline(routeCoords, {color: 'blue'}).addTo(map);
+      map.fitBounds(routeCoords);
+
+      if (mode === 'zielstadt') {
+        const fullDistance = routeData.paths[0].distance / 1000;
+        const remaining = Math.max(0, fullDistance - km);
+        document.getElementById('info').textContent = `Du hast ${km.toFixed(1)} km geschafft. Bis zum Ziel fehlen noch ${remaining.toFixed(1)} km.`;
+      } else {
+        document.getElementById('info').textContent = '';
+      }
+    }
+
+    function distanceKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+  </script>
+</body>
+</html>
