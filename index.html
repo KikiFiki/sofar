@@ -20,9 +20,6 @@
       flex-wrap: nowrap;
       align-items: center;
       justify-content: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       margin-bottom: 0.5em;
     }
     .logo-icon {
@@ -140,7 +137,7 @@
     });
 
     async function geocode(city) {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
+      const res = await fetch(\`https://nominatim.openstreetmap.org/search?format=json&q=\${encodeURIComponent(city)}\`);
       const data = await res.json();
       if (!data.length) throw new Error('Stadt nicht gefunden.');
       return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
@@ -151,8 +148,7 @@
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));return R * c;
     }
 
     async function showDistance() {
@@ -174,7 +170,7 @@
         const deltaLat = (km / 111) * Math.cos(angle);
         const deltaLon = (km / 85) * Math.sin(angle);
         const endCoords = [startCoords[0] + deltaLat, startCoords[1] + deltaLon];
-        const response = await fetch(`https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords[0]},${endCoords[1]}&vehicle=foot&points_encoded=false&key=${apiKey}`);
+        const response = await fetch(\`https://graphhopper.com/api/1/route?point=\${startCoords[0]},\${startCoords[1]}&point=\${endCoords[0]},\${endCoords[1]}&vehicle=foot&points_encoded=false&key=\${apiKey}\`);
         const data = await response.json();
         if (!data.paths?.length) { alert('Keine Route gefunden.'); return; }
         routeCoords = data.paths[0].points.coordinates.map(c => [c[1], c[0]]);
@@ -183,28 +179,21 @@
         if (!destCity) { alert('Bitte Zielstadt eingeben.'); return; }
         let endCoords;
         try { endCoords = await geocode(destCity); } catch (e) { alert(e.message); return; }
-        const response = await fetch(`https://graphhopper.com/api/1/route?point=${startCoords[0]},${startCoords[1]}&point=${endCoords[0]},${endCoords[1]}&vehicle=foot&points_encoded=false&key=${apiKey}`);
+        const response = await fetch(\`https://graphhopper.com/api/1/route?point=\${startCoords[0]},\${startCoords[1]}&point=\${endCoords[0]},\${endCoords[1]}&vehicle=foot&points_encoded=false&key=\${apiKey}\`);
         const data = await response.json();
         if (!data.paths?.length) { alert('Keine Route gefunden.'); return; }
         const fullRoute = data.paths[0].points.coordinates.map(c => [c[1], c[0]]);
         let total = 0;
-        routeCoords.push(fullRoute[0]);
-        for (let i = 1; i < fullRoute.length; i++) {
-          const [lat1, lon1] = fullRoute[i - 1];
-          const [lat2, lon2] = fullRoute[i];
-          const dist = distanceKm(lat1, lon1, lat2, lon2);
-          if (total + dist > km) break; total += dist; routeCoords.push(fullRoute[i]);
-        }
-        const remaining = Math.max(0, data.paths[0].distance/1000 - km).toFixed(1);
-        document.getElementById('info').textContent = `Du hast ${km.toFixed(1)} km geschafft. Noch ${remaining} km bis Z.`;
+        routeCoords.push(fullRoute[0]);for(let i=1;i<fullRoute.length;i++){const [lat1,lon1]=fullRoute[i-1], [lat2,lon2]=fullRoute[i];const dist=distanceKm(lat1,lon1,lat2,lon2);if(total+dist>km) break;total+=dist;routeCoords.push(fullRoute[i]);}
+        const remaining = Math.max(0,data.paths[0].distance/1000-km).toFixed(1);
+        document.getElementById('info').textContent = \`Du hast \${km.toFixed(1)} km geschafft. Noch \${remaining} km bis Z.\`;
       }
 
-      map.eachLayer(l => { if (l instanceof L.Marker || l instanceof L.Polyline) map.removeLayer(l); });
+      map.eachLayer(layer => { if (layer instanceof L.Marker || layer instanceof L.Polyline) map.removeLayer(layer); });
       L.marker(startCoords).addTo(map).bindPopup('Start: ' + startCity).openPopup();
       const last = routeCoords[routeCoords.length - 1];
-      L.marker(last).addTo(map).bindPopup(`${km.toFixed(1)} km`).openPopup();
-      L.polyline(routeCoords, { color: '#FF6A13' }).addTo(map);
-      map.fitBounds(routeCoords);
+      L.marker(last).addTo(map).bindPopup(\`\${km.toFixed(1)} km\`).openPopup();
+      L.polyline(routeCoords, { color: '#FF6A13' }).addTo(map);map.fitBounds(routeCoords);
     }
   </script>
   <footer>© 2025 sofar. Alle Rechte vorbehalten.</footer>
