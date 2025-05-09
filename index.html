@@ -124,8 +124,9 @@
 
   <div id="info"></div>
   <button onclick="showDistance()">Show Distance</button>
-  <div id="map"></div>
-  <img src="logo-sofar-path.png" alt="SOFAR watermark" style="position:absolute; bottom:20px; left:20px; opacity:0.2; height:60px; pointer-events:none; z-index:500;">
+  <div id="map" style="position: relative;"></div>
+  
+  <img src="logo-sofar-path.png" alt="SOFAR watermark" style="position: absolute; top: 20px; left: 20px; height: 60px; pointer-events: none; z-index: 500;">
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     document.addEventListener('keydown', function(event) {
