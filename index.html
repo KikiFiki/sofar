@@ -27,7 +27,7 @@
       margin-bottom: 0.5em;
     }
     .logo-icon {
-      height: 200px;
+      height: 100px;
       width: auto;
     }
     .logo-text {
@@ -97,10 +97,11 @@
   </style>
 </head>
 <body>
-  <div class="logo-container">
-    <img src="logo-sofar-path.png" alt="SOFAR Logo" class="logo-icon" style="background: transparent;">
+  <div class="logo-container" style="flex-direction: column; margin-bottom: 1.5em;">
+    <img src="logo-sofar-path.png" alt="SOFAR Logo" class="logo-icon" style="background: transparent; height: 80px;">
+    <div class="logo-text">SOFAR</div>
   </div>
-  <p class="header-subtext">How far have you run?</p>
+  <p class="header-subtext" style="margin-top: -0.5em; font-size: 1.3em;">How far have you run?</p>
 
   <label for="mode">Mode:</label>
   <select id="mode">
@@ -125,11 +126,18 @@
   <div id="info"></div>
   <button onclick="showDistance()">Show Distance</button>
   <div id="map" style="position: relative;">
-    <img src="logo-sofar-path.png" alt="SOFAR watermark" style="position: absolute; top: 20px; left: 20px; height: 60px; pointer-events: none; z-index: 500;">
+    <img src="logo-sofar-path.png" alt="SOFAR watermark" style="position: absolute; top: 20px; left: 80px; height: 60px; pointer-events: none; z-index: 500;">
   </div>
   
   
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  document.getElementById('mode').addEventListener('change', () => {
+    const mode = document.getElementById('mode').value;
+    document.getElementById('direction').style.display = mode === 'direction' ? 'block' : 'none';
+    document.getElementById('destCity').style.display = mode === 'destination' ? 'block' : 'none';
+  });
+</script>
   <script>
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Enter') {
@@ -229,13 +237,18 @@
         }
         const full = data.paths[0].points.coordinates.map(c => [c[1], c[0]]);
         let total = 0;
-        routeCoords.push(full[0]);
+        let clipped = [full[0]];
         for (let i = 1; i < full.length; i++) {
           const [a, b] = full[i - 1], [c, d] = full[i];
           const dist = distanceKm(a, b, c, d);
           if (total + dist > km) break;
           total += dist;
-          routeCoords.push(full[i]);
+          clipped.push(full[i]);
+        }
+        routeCoords = clipped;
+        const remainingCoords = full.slice(clipped.length - 1);
+        if (remainingCoords.length > 1) {
+          L.polyline(remainingCoords, { color: '#999', dashArray: '8,6' }).addTo(map);
         }
         const remaining = Math.max(0, data.paths[0].distance / 1000 - km).toFixed(1);
         document.getElementById('info').textContent = `You ran ${km.toFixed(1)} km. ${remaining} km to go.`;
@@ -250,7 +263,11 @@
       const last = routeCoords[routeCoords.length - 1];
       L.marker(last, {icon: L.divIcon({className: 'custom-marker', html: '<div style="background-color:#FF6A13;width:14px;height:14px;border-radius:50%"></div>'})}).addTo(map).bindPopup(`${km.toFixed(1)} km`).openPopup();
       L.polyline(routeCoords, { color: '#FF6A13' }).addTo(map);
-      map.fitBounds(routeCoords);
+        const remainingCoords = full.slice(clipped.length - 1);
+        if (remainingCoords.length > 1) {
+          L.polyline(remainingCoords, { color: '#999', dashArray: '5,8' }).addTo(map);
+        }
+      map.fitBounds(full);
     }
   </script>
   <footer>© 2025 SOFAR. All rights reserved.<br><a href="#impressum" onclick="toggleLegal('impressum')">Legal Notice</a> · <a href="#datenschutz" onclick="toggleLegal('datenschutz')">Privacy</a>
