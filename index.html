@@ -11,279 +11,286 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="favicon-vibrant.ico" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: sans-serif;
+      font-family: 'Inter', sans-serif;
       margin: 0;
-      padding: 1em;
-      background-color: #f9f9f9;
+      padding: 0;
+      background-color: #fffdfc;
       color: #333;
     }
     .logo-container {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      margin-bottom: 0.5em;
+      margin: 2em 0 1em;
     }
     .logo-icon {
-      height: 100px;
+      background: transparent;
+      height: 80px;
       width: auto;
-    }
-    .logo-text {
-      font-size: 1.5em;
-      font-weight: bold;
-      color: #FF6A13;
-      margin-left: 0.5em;
     }
     p.header-subtext {
       text-align: center;
-      font-size: 1.2em;
-      margin-top: 0;
-      margin-bottom: 1em;
+      font-size: 1.4em;
+      margin: 0 0 1em;
       color: #333;
     }
-    input, select, button {
+    .input-box {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+      padding: 1.5em;
+      max-width: 500px;
+      margin: 0 auto 1.5em;
+    }
+    .input-box input,
+    .input-box select,
+    .input-box button {
       padding: 0.75em;
-      margin: 0.5em auto;
+      margin: 0.5em 0;
       width: 100%;
-      max-width: 400px;
-      display: block;
       font-size: 1em;
       border: 1px solid #ccc;
       border-radius: 5px;
       box-sizing: border-box;
     }
     button {
-      background-color: #FF6A13;
+      background: linear-gradient(to right, #FF6A13, #f95b0b);
       color: white;
       font-weight: bold;
       border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.3s ease;
     }
     button:hover {
-      background-color: #cc5810;
+      background: linear-gradient(to right, #f95b0b, #FF6A13);
     }
     #map {
       height: 60vh;
       margin: 1em auto;
-      max-width: 100%;
+      max-width: 95%;
       border: 2px solid #FF6A13;
-      border-radius: 5px;
+      border-radius: 10px;
+      position: relative;
     }
-    #info {
+    #error-message {
+      background: #fff3f2;
+      border: 1px solid #ffc5c0;
+      color: #b30000;
+      padding: 1em;
+      border-radius: 5px;
+      max-width: 500px;
       margin: 1em auto;
-      font-weight: bold;
+      display: none;
       text-align: center;
-      color: red;
     }
     label[for="mode"] {
-      display: block;
-      text-align: center;
-      font-weight: bold;
-      margin-top: 1em;
+      font-weight: 600;
       color: #FF6A13;
+      display: block;
+      margin-bottom: 0.3em;
     }
     footer {
       text-align: center;
-      font-size: 0.8em;
-      color: #888;
+      font-size: 0.85em;
+      color: #666;
+      background: #f1f1f1;
+      padding: 1em;
       margin-top: 2em;
     }
     @media (max-width: 600px) {
       .logo-text { font-size: 1.2em; }
       p.header-subtext { font-size: 1em; }
-      input, select, button { font-size: 0.95em; }
+      .input-box input,
+      .input-box select,
+      .input-box button { font-size: 0.95em; }
     }
   </style>
 </head>
 <body>
-  <div class="logo-container" style="flex-direction: column; margin-bottom: 1.5em;">
-    <img src="logo-sofar-path.png" alt="SOFAR Logo" class="logo-icon" style="background: transparent; height: 80px;">
-    <div class="logo-text">SOFAR</div>
+  <div class="logo-container">
+    <img src="logo-sofar-path.png" alt="SOFAR Logo" class="logo-icon">
+    <p class="header-subtext">How far have you run?</p>
   </div>
-  <p class="header-subtext" style="margin-top: -0.5em; font-size: 1.3em;">How far have you run?</p>
 
-  <label for="mode">Mode:</label>
-  <select id="mode">
-    <option value="direction">City + Direction + Distance</option>
-    <option value="destination">City + Destination + Distance</option>
-  </select>
+  <div class="input-box">
+    <label for="mode">Mode:</label>
+    <select id="mode">
+      <option value="direction">City + Direction + Distance</option>
+      <option value="destination">City + Destination + Distance</option>
+    </select>
 
-  <input type="text" id="city" placeholder="Starting city (e.g., Berlin)">
-  <input type="number" id="distance" placeholder="Distance run (km)">
-  <select id="direction" style="display: block;">
-    <option value="N">North</option>
-    <option value="NE">Northeast</option>
-    <option value="E">East</option>
-    <option value="SE">Southeast</option>
-    <option value="S">South</option>
-    <option value="SW">Southwest</option>
-    <option value="W">West</option>
-    <option value="NW">Northwest</option>
-  </select>
-  <input type="text" id="destCity" placeholder="Destination city" style="display: none;">
+    <input type="text" id="city" placeholder="Starting city (e.g., Berlin)">
+    <input type="number" id="distance" placeholder="Distance run (km)">
+    <select id="direction" style="display: block;">
+      <option value="N">North</option>
+      <option value="NE">Northeast</option>
+      <option value="E">East</option>
+      <option value="SE">Southeast</option>
+      <option value="S">South</option>
+      <option value="SW">Southwest</option>
+      <option value="W">West</option>
+      <option value="NW">Northwest</option>
+    </select>
+    <input type="text" id="destCity" placeholder="Destination city" style="display: none;">
+    <button id="showBtn">Show Distance</button>
+  </div>
 
-  <div id="info"></div>
-  <button onclick="showDistance()">Show Distance</button>
-  <div id="map" style="position: relative;">
+  <div id="error-message">No route found. It is likely that the calculated destination lies in the sea or in an unreachable area. Try a different direction or shorter distance.</div>
+  <div id="map">
     <img src="logo-sofar-path.png" alt="SOFAR watermark" style="position: absolute; top: 20px; left: 80px; height: 60px; pointer-events: none; z-index: 500;">
   </div>
-  
-  
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  document.getElementById('mode').addEventListener('change', () => {
-    const mode = document.getElementById('mode').value;
-    document.getElementById('direction').style.display = mode === 'direction' ? 'block' : 'none';
-    document.getElementById('destCity').style.display = mode === 'destination' ? 'block' : 'none';
+document.getElementById('mode').addEventListener('change', () => {
+  const mode = document.getElementById('mode').value;
+  document.getElementById('direction').style.display = mode === 'direction' ? 'block' : 'none';
+  document.getElementById('destCity').style.display = mode === 'destination' ? 'block' : 'none';
+});
+
+function distanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+async function geocode(city) {
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
+  const data = await res.json();
+  if (!data.length) throw new Error('City not found.');
+  return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+}
+
+async function showDistance() {
+  const mode = document.getElementById('mode').value;
+  const city = document.getElementById('city').value;
+  const km = parseFloat(document.getElementById('distance').value);
+  document.getElementById('error-message').style.display = 'none';
+  if (!city || isNaN(km)) {
+    alert('Please enter a starting city and distance.');
+    return;
+  }
+  let startCoords;
+  try {
+    startCoords = await geocode(city);
+  } catch (e) {
+    alert(e.message);
+    return;
+  }
+  map.eachLayer(layer => {
+    if (layer instanceof L.Marker || layer instanceof L.Polyline) map.removeLayer(layer);
   });
+  baseLayer.addTo(map);
+  let popupText = `${km.toFixed(1)} km`;
+  if (mode === 'direction') {
+    const dir = document.getElementById('direction').value;
+    const angles = {N:0, NE:45, E:90, SE:135, S:180, SW:225, W:270, NW:315};
+    const angle = angles[dir] * Math.PI / 180;
+    const deltaLat = (km / 111) * Math.cos(angle);
+    const deltaLon = (km / 85) * Math.sin(angle);
+    const end = [startCoords[0] + deltaLat, startCoords[1] + deltaLon];
+    const res = await fetch(`https://small-feather-163d.schaefer-jesco.workers.dev?point=${startCoords[0]},${startCoords[1]}&point=${end[0]},${end[1]}&vehicle=foot&points_encoded=false`);
+    const data = await res.json();
+    if (!data.paths?.length) {
+      document.getElementById('error-message').style.display = 'block';
+      return;
+    }
+    const coords = data.paths[0].points.coordinates.map(c => [c[1], c[0]]);
+    L.polyline(coords, { color: '#FF6A13' }).addTo(map);
+    L.marker(coords[0], {
+      icon: L.divIcon({ className: 'custom-marker', html: '<div style="background-color:#FF6A13;width:14px;height:14px;border-radius:50%"></div>' })
+    }).addTo(map).bindPopup('Start: ' + city);
+    L.marker(coords[coords.length - 1], {
+      icon: L.divIcon({ className: 'custom-marker', html: '<div style="font-size: 24px;">🏁</div>' })
+    }).addTo(map).bindPopup(popupText).openPopup();
+    map.fitBounds(coords);
+  } else {
+    const dest = document.getElementById('destCity').value;
+    if (!dest) {
+      alert('Please enter a destination city.');
+      return;
+    }
+    let endCoords;
+    try {
+      endCoords = await geocode(dest);
+    } catch (e) {
+      alert(e.message);
+      return;
+    }
+    const res = await fetch(`https://small-feather-163d.schaefer-jesco.workers.dev?point=${startCoords[0]},${startCoords[1]}&point=${endCoords[0]},${endCoords[1]}&vehicle=foot&points_encoded=false`);
+    const data = await res.json();
+    if (!data.paths?.length) {
+      document.getElementById('error-message').style.display = 'block';
+      return;
+    }
+    const full = data.paths[0].points.coordinates.map(c => [c[1], c[0]]);
+    let total = 0;
+    let clipped = [full[0]];
+    for (let i = 1; i < full.length; i++) {
+      const [a, b] = full[i - 1], [c, d] = full[i];
+      const dist = distanceKm(a, b, c, d);
+      if (total + dist > km) break;
+      total += dist;
+      clipped.push(full[i]);
+    }
+    const remainingCoords = full.slice(clipped.length - 1);
+    L.polyline(clipped, { color: '#FF6A13' }).addTo(map);
+    if (remainingCoords.length > 1) {
+      L.polyline(remainingCoords, { color: '#FF6A13', dashArray: '5,8' }).addTo(map);
+    }
+    const remaining = Math.max(0, data.paths[0].distance / 1000 - km).toFixed(1);
+    popupText = `You ran ${km.toFixed(1)} km. ${remaining} km to go.`;
+    L.marker(startCoords, {
+      icon: L.divIcon({ className: 'custom-marker', html: '<div style="background-color:#FF6A13;width:14px;height:14px;border-radius:50%"></div>' })
+    }).addTo(map).bindPopup('Start: ' + city);
+    L.marker(clipped[clipped.length - 1], {
+      icon: L.divIcon({ className: 'custom-marker', html: '<div style="font-size: 28px; color: #FF6A13; text-shadow: 1px 1px 2px #fff;">🏃</div>' })
+    }).addTo(map).bindPopup(popupText).openPopup();
+    L.marker(endCoords, {
+      icon: L.divIcon({ className: 'custom-marker', html: '<div style="font-size: 24px;">🏁</div>' })
+    }).addTo(map).bindPopup('Goal: ' + dest);
+    map.fitBounds(full);
+  }
+}
+
+document.getElementById('showBtn').addEventListener('click', showDistance);
 </script>
   <script>
-    document.addEventListener('keydown', function(event) {
-      if (event.key === 'Enter') {
-        const active = document.activeElement;
-        if (active.tagName === 'INPUT' || active.tagName === 'SELECT') {
-          event.preventDefault();
-          showDistance();
-        }
-      }
-    });
-
+    // Leaflet map setup
     let map = L.map('map', {
       center: [51, 10],
-      zoom: 6,
-      layers: []
+      zoom: 6
     });
-
-    const baseLayers = {
-      'Standard': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-      }),
-      'Gray': L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap, &copy; CartoDB'
-      })
-    };
-
-    baseLayers['Standard'].addTo(map);
-    L.control.layers(baseLayers).addTo(map);
-
-    async function geocode(city) {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
-      const data = await res.json();
-      if (!data.length) throw new Error('City not found.');
-      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-    }
-
-    function distanceKm(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const dLat = (lat2 - lat1) * Math.PI / 180;
-      const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
-    }
-
-    async function showDistance() {
-      const apiKey = ''; // API key is handled server-side
-      const mode = document.getElementById('mode').value;
-      const city = document.getElementById('city').value;
-      const km = parseFloat(document.getElementById('distance').value);
-      if (!city || isNaN(km)) { alert('Please enter a starting city and distance.'); return; }
-
-      let startCoords;
-      try {
-        startCoords = await geocode(city);
-      } catch (e) {
-        alert(e.message);
-        return;
-      }
-
-      let routeCoords = [];
-      document.getElementById('info').textContent = '';
-
-      if (mode === 'direction') {
-        const dir = document.getElementById('direction').value;
-        const angles = {N:0, NE:45, E:90, SE:135, S:180, SW:225, W:270, NW:315};
-        const angle = angles[dir] * Math.PI / 180;
-        const deltaLat = (km / 111) * Math.cos(angle);
-        const deltaLon = (km / 85) * Math.sin(angle);
-        const end = [startCoords[0] + deltaLat, startCoords[1] + deltaLon];
-        const res = await fetch(`https://small-feather-163d.schaefer-jesco.workers.dev?point=${startCoords[0]},${startCoords[1]}&point=${end[0]},${end[1]}&vehicle=foot&points_encoded=false&key=${apiKey}`);
-        const data = await res.json();
-        if (!data.paths?.length) {
-          document.getElementById('info').textContent = `No route could be generated in that direction. You may have reached the sea or an unreachable area.`;
-          document.getElementById('info').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          return;
-        }
-        routeCoords = data.paths[0].points.coordinates.map(c => [c[1], c[0]]);
-      } else {
-        const dest = document.getElementById('destCity').value;
-        if (!dest) {
-          alert('Please enter a destination city.');
-          return;
-        }
-        let endCoords;
-        try {
-          endCoords = await geocode(dest);
-        } catch (e) {
-          alert(e.message);
-          return;
-        }
-        const res = await fetch(`https://small-feather-163d.schaefer-jesco.workers.dev?point=${startCoords[0]},${startCoords[1]}&point=${endCoords[0]},${endCoords[1]}&vehicle=foot&points_encoded=false&key=${apiKey}`);
-        const data = await res.json();
-        if (!data.paths?.length) {
-          alert('No route found.');
-          return;
-        }
-        const full = data.paths[0].points.coordinates.map(c => [c[1], c[0]]);
-        let total = 0;
-        let clipped = [full[0]];
-        for (let i = 1; i < full.length; i++) {
-          const [a, b] = full[i - 1], [c, d] = full[i];
-          const dist = distanceKm(a, b, c, d);
-          if (total + dist > km) break;
-          total += dist;
-          clipped.push(full[i]);
-        }
-        routeCoords = clipped;
-        const remainingCoords = full.slice(clipped.length - 1);
-        if (remainingCoords.length > 1) {
-          L.polyline(remainingCoords, { color: '#999', dashArray: '8,6' }).addTo(map);
-        }
-        const remaining = Math.max(0, data.paths[0].distance / 1000 - km).toFixed(1);
-        document.getElementById('info').textContent = `You ran ${km.toFixed(1)} km. ${remaining} km to go.`;
-        document.getElementById('info').scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-
-      map.eachLayer(layer => {
-        if (layer instanceof L.Marker || layer instanceof L.Polyline) map.removeLayer(layer);
-      });
-
-      L.marker(startCoords, {icon: L.divIcon({className: 'custom-marker', html: '<div style="background-color:#FF6A13;width:14px;height:14px;border-radius:50%"></div>'})}).addTo(map).bindPopup('Start: ' + city).openPopup();
-      const last = routeCoords[routeCoords.length - 1];
-      L.marker(last, {icon: L.divIcon({className: 'custom-marker', html: '<div style="background-color:#FF6A13;width:14px;height:14px;border-radius:50%"></div>'})}).addTo(map).bindPopup(`${km.toFixed(1)} km`).openPopup();
-      L.polyline(routeCoords, { color: '#FF6A13' }).addTo(map);
-        const remainingCoords = full.slice(clipped.length - 1);
-        if (remainingCoords.length > 1) {
-          L.polyline(remainingCoords, { color: '#999', dashArray: '5,8' }).addTo(map);
-        }
-      map.fitBounds(full);
-    }
+    const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+    baseLayer.addTo(map);
   </script>
-  <footer>© 2025 SOFAR. All rights reserved.<br><a href="#impressum" onclick="toggleLegal('impressum')">Legal Notice</a> · <a href="#datenschutz" onclick="toggleLegal('datenschutz')">Privacy</a>
-  </footer>
-  <div id="legal-text" style="display:none; max-width:600px; margin:2em auto; font-size:0.9em; line-height:1.5; color:#444;"></div>
-  <script>
-    function toggleLegal(section) {
-      const el = document.getElementById('legal-text');
-      el.style.display = 'block';
-      if (section === 'impressum') {
-        el.innerHTML = '<h2>Legal Notice</h2><p>Information according to § 5 TMG</p><p>Jesco Fabian Schäfer<br>Blumenwerderstr. 10<br>16225 Eberswalde<br>Germany</p><p>Email: schaefer.jesco@gmail.com</p>';
-      } else if (section === 'datenschutz') {
-        el.innerHTML = '<h2>Privacy Policy</h2><p>No personal data is stored or processed by the operator of this site. This website does not use cookies, analytics tools, or advertising trackers. Map requests are processed anonymously by external routing services (GraphHopper).</p>';
-      }
-      window.scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
+<footer>
+  © 2025 SOFAR. All rights reserved.<br>
+  <a href="#impressum" onclick="toggleLegal('impressum')">Legal Notice</a> ·
+  <a href="#datenschutz" onclick="toggleLegal('datenschutz')">Privacy</a>
+</footer>
+<div id="legal-text" style="display:none; max-width:600px; margin:2em auto; font-size:0.9em; line-height:1.5; color:#444;"></div>
+<script>
+  function toggleLegal(section) {
+    const el = document.getElementById('legal-text');
+    el.style.display = 'block';
+    if (section === 'impressum') {
+      el.innerHTML = '<h2>Legal Notice</h2><p>Information according to § 5 TMG</p><p>Jesco Fabian Schäfer<br>Blumenwerderstr. 10<br>16225 Eberswalde<br>Germany</p><p>Email: schaefer.jesco@gmail.com</p>';
+    } else if (section === 'datenschutz') {
+      el.innerHTML = '<h2>Privacy Policy</h2><p>No personal data is stored or processed by the operator of this site. This website does not use cookies, analytics tools, or advertising trackers. Map requests are processed anonymously by external routing services (GraphHopper).</p>';
     }
-  </script>
+    window.scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
+  }
+</script>
 </body>
 </html>
